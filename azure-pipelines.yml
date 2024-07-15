@@ -1,0 +1,55 @@
+trigger:
+  branches:
+    include:
+    - main
+  tags:
+    include:
+    - '*'
+
+pr:
+  branches:
+    include:
+    - main
+    exclude:
+    - doc/*
+    - README.rst
+
+
+
+stages:
+  - stage: RunAllTests
+    displayName: Run test suite
+    jobs:
+      - job: run_platform_tests
+        strategy:
+          matrix:
+            linux_py311:
+              imageName: 'ubuntu-latest'
+              python.version: '3.11'
+        pool:
+          vmImage: $(imageName)
+
+        steps:
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: '$(python.version)'
+          displayName: 'Use Python $(python.version)'
+
+        - script: |
+            python -m pip install --upgrade pip
+            pip install panel pytest pytest-playwright pytest-cov psutil pytest-asyncio pytest-rerunfailures pytest-xdist
+          displayName: 'Install dependencies'
+
+        - bash: |
+            playwright install chromium
+          displayName: 'Install playwright browser'
+
+
+        - script: |
+            pytest test_app_frontend.py --browser chromium -n 1
+          displayName: 'Run tests'
+
+
+
+
+
